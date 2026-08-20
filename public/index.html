@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#0b0e14" />
+    <title>GukzSchedule</title>
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="icon.svg" />
+    <link rel="icon" href="icon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">
+        <span class="logo">🎮</span>
+        <div>
+          <h1>GukzSchedule</h1>
+          <p class="tagline">Próximos jogos dos seus times</p>
+        </div>
+      </div>
+      <button id="calBtn" class="cal-btn" title="Assinar no Calendário do iPhone">＋ Calendário</button>
+    </header>
+
+    <nav class="tabs">
+      <button class="tab active" data-tab="agenda">Próximos jogos</button>
+      <button class="tab" data-tab="teams">Meus times</button>
+    </nav>
+
+    <!-- ABA: PRÓXIMOS JOGOS -->
+    <main id="tab-agenda" class="tab-panel active">
+      <div class="controls">
+        <input id="agendaSearch" class="search" type="search" placeholder="Buscar time ou torneio…" />
+        <div id="agendaFilters" class="chips"></div>
+      </div>
+      <p id="agendaMeta" class="meta"></p>
+      <div id="agendaList" class="list"></div>
+    </main>
+
+    <!-- ABA: MEUS TIMES -->
+    <main id="tab-teams" class="tab-panel">
+      <div class="controls">
+        <input id="teamSearch" class="search" type="search" placeholder="Buscar time…" />
+        <div id="teamFilters" class="chips"></div>
+      </div>
+      <p id="teamsMeta" class="meta"></p>
+      <div id="teamsList" class="list teams-list"></div>
+
+      <div class="save-bar">
+        <button id="saveBtn" class="primary">Salvar favoritos</button>
+        <button id="downloadBtn" class="ghost">Baixar favorites.json</button>
+        <button id="tokenBtn" class="ghost">Configurar token</button>
+      </div>
+      <p id="saveMsg" class="save-msg"></p>
+    </main>
+
+    <!-- Modal do calendário -->
+    <div id="calModal" class="modal" hidden>
+      <div class="modal-card">
+        <h2>Assinar no Calendário</h2>
+        <p>Copie a URL abaixo e adicione como <b>calendário assinado</b> no iPhone:</p>
+        <p class="how">Ajustes → Aplicativos → Calendário → Contas → Adicionar conta → Outra → Adicionar calendário assinado</p>
+        <input id="calUrl" class="search" type="text" readonly />
+        <div class="modal-actions">
+          <button id="copyCalBtn" class="primary">Copiar URL</button>
+          <a id="webcalLink" class="ghost" href="#">Abrir direto (webcal)</a>
+          <button id="closeCalBtn" class="ghost">Fechar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal do token -->
+    <div id="tokenModal" class="modal" hidden>
+      <div class="modal-card">
+        <h2>Token do GitHub</h2>
+        <p>
+          Pra salvar os favoritos direto daqui, cole um <b>fine-grained token</b> do GitHub com acesso
+          só a este repositório e permissão <b>Contents: Read and write</b>. Ele fica guardado só neste
+          navegador (localStorage).
+        </p>
+        <input id="tokenInput" class="search" type="password" placeholder="github_pat_…" />
+        <div class="modal-actions">
+          <button id="saveTokenBtn" class="primary">Guardar</button>
+          <button id="clearTokenBtn" class="ghost">Apagar token</button>
+          <button id="closeTokenBtn" class="ghost">Fechar</button>
+        </div>
+        <p class="hint">
+          Sem token? Use “Baixar favorites.json” e faça o commit do arquivo em <code>data/</code> na mão.
+        </p>
+      </div>
+    </div>
+
+    <script src="app.js" type="module"></script>
+  </body>
+</html>

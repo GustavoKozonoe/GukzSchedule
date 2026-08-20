@@ -1,0 +1,16 @@
+{
+  "name": "gukzschedule",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Agenda dos jogos dos meus times de esports (CS2, Valorant, LoL) no Calendario do iPhone + pagina web.",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "catalog": "node scripts/catalog.mjs",
+    "generate": "node scripts/generate.mjs",
+    "build": "node scripts/catalog.mjs && node scripts/generate.mjs",
+    "serve": "node scripts/serve.mjs"
+  }
+}

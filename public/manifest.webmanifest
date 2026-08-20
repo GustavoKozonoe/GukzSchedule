@@ -1,0 +1,13 @@
+{
+  "name": "GukzSchedule",
+  "short_name": "GukzSchedule",
+  "description": "Próximos jogos dos meus times de esports.",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "background_color": "#0b0e14",
+  "theme_color": "#0b0e14",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

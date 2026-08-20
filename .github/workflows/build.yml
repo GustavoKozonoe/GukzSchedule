@@ -1,0 +1,57 @@
+name: Atualizar agenda e publicar
+
+on:
+  schedule:
+    - cron: "0 */4 * * *" # a cada 4 horas
+  push:
+    branches: [main]
+    paths:
+      - "data/**" # quando voce salva favoritos pela pagina
+      - "src/**"
+      - "scripts/**"
+      - "public/**"
+      - ".github/workflows/**"
+  workflow_dispatch: {} # botao "Run workflow" manual
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Nao cancela um deploy em andamento; enfileira o proximo.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Gerar catálogo de times
+        env:
+          PANDASCORE_TOKEN: ${{ secrets.PANDASCORE_TOKEN }}
+        run: node scripts/catalog.mjs
+
+      - name: Gerar agenda (.ics + .json)
+        env:
+          PANDASCORE_TOKEN: ${{ secrets.PANDASCORE_TOKEN }}
+        run: node scripts/generate.mjs
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: public
+
+      - name: Deploy no GitHub Pages
+        id: deploy
+        uses: actions/deploy-pages@v4
