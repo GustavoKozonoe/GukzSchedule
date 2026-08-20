@@ -1,13 +1,14 @@
 # GukzSchedule 🎮
 
-Uma agenda dos jogos dos **seus times de esports** (CS2, Valorant e LoL) em um lugar só:
+Uma agenda dos jogos dos **seus times** — esports (CS2, Valorant, LoL) e **futebol** — em um lugar só:
 
 - **Página web** simples pra ver os próximos jogos (com busca e filtro por jogo).
 - **Calendário assinável** (`.ics`) pra assinar no **Calendário do iPhone** — os jogos aparecem no app
   nativo, com alerta, e atualizam sozinhos. **Sem App Store, sem servidor, sem custo.**
 
-Os dados vêm da [PandaScore](https://pandascore.co) (tier grátis). Um robô do GitHub Actions atualiza
-tudo de tempos em tempos e publica no GitHub Pages.
+Os dados de esports vêm da [PandaScore](https://pandascore.co) e os de futebol da
+[football-data.org](https://www.football-data.org) (ambos com tier grátis). Um robô do GitHub Actions
+atualiza tudo de tempos em tempos e publica no GitHub Pages.
 
 ---
 
@@ -37,9 +38,20 @@ aviso quando estiver perto de expirar.
 
 ## Configuração (uma vez só)
 
-### 1. Token da PandaScore
+### 1. Tokens das APIs
+**PandaScore (esports):**
 1. Crie uma conta grátis em https://pandascore.co (não pede cartão).
 2. Copie seu **API token** no painel.
+
+**football-data.org (futebol) — opcional:**
+1. Pegue um token grátis em https://www.football-data.org/client/register.
+2. Guarde o token. Se você não configurar este token, o app simplesmente **não mostra futebol**
+   (os esports continuam funcionando normalmente).
+
+> Competições acompanhadas (as que estiverem no tier grátis): Brasileirão, Champions League,
+> Premier League, La Liga, Serie A (ITA), Bundesliga, Ligue 1, Eredivisie, Primeira Liga (POR),
+> Championship e Libertadores. As que não estiverem no seu plano são puladas automaticamente.
+> A lista fica em `COMPETITIONS`, no topo de `src/footballdata.mjs`.
 
 ### 2. Suba este projeto pro GitHub
 Crie um repositório chamado `GukzSchedule` na sua conta e suba estes arquivos:
@@ -53,10 +65,10 @@ git remote add origin https://github.com/SEU_USUARIO/GukzSchedule.git
 git push -u origin main
 ```
 
-### 3. Guarde o token como secret
+### 3. Guarde os tokens como secrets
 No repositório: **Settings → Secrets and variables → Actions → New repository secret**
-- Nome: `PANDASCORE_TOKEN`
-- Valor: o token da PandaScore
+- `PANDASCORE_TOKEN` = o token da PandaScore
+- `FOOTBALL_DATA_TOKEN` = o token da football-data.org (opcional; só se quiser futebol)
 
 ### 4. Ligue o GitHub Pages
 **Settings → Pages → Build and deployment → Source: GitHub Actions.**
@@ -116,7 +128,8 @@ node scripts/serve.mjs
 
 | Arquivo | O quê |
 |---|---|
-| `src/pandascore.mjs` | Cliente da API da PandaScore |
+| `src/pandascore.mjs` | Cliente da API da PandaScore (esports) |
+| `src/footballdata.mjs` | Coletor de futebol (football-data.org) |
 | `src/ics.mjs` | Monta o arquivo `.ics` |
 | `scripts/catalog.mjs` | Gera `public/teams.json` (catálogo de times) |
 | `scripts/generate.mjs` | Gera `public/agenda.ics`, `agenda.json` e `favorites.json` |
@@ -128,6 +141,7 @@ node scripts/serve.mjs
 
 ## Próximos passos possíveis
 
-A arquitetura é modular. Pra adicionar **futebol, tênis ou tênis de mesa**, é só criar um novo
-"coletor" que produza eventos no mesmo formato (`matchToEvent`) e juntá-los no `generate.mjs`.
-Cada esporte pode usar uma API diferente (football-data.org, API-Sports, etc.).
+A arquitetura é modular. **Futebol** já entrou como o coletor `src/footballdata.mjs`. Pra adicionar
+**tênis ou tênis de mesa**, é só criar um novo coletor que produza eventos no mesmo formato
+(`matchToEvent` / `footballMatchToEvent`) e juntá-los no `generate.mjs` (e no `catalog.mjs` para o
+seletor). Cada esporte pode usar uma API diferente (API-Sports, Sportradar, etc.).

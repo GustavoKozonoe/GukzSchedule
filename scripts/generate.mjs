@@ -5,6 +5,7 @@ import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { GAMES, fetchUpcoming, matchToEvent } from "../src/pandascore.mjs";
+import { fetchFootballUpcoming, footballMatchToEvent } from "../src/footballdata.mjs";
 import { buildCalendar } from "../src/ics.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -45,6 +46,23 @@ async function main() {
     console.log(`${matches.length} no total, ${mine.length} dos seus times`);
 
     for (const m of mine) events.push(matchToEvent(m, game.slug));
+  }
+
+  // Futebol (football-data.org) — opcional, so se o token existir
+  const fdToken = process.env.FOOTBALL_DATA_TOKEN;
+  const footFavs = new Set((favorites.football || []).map(Number));
+  if (footFavs.size === 0) {
+    console.log("Futebol: nenhum time favorito, pulando.");
+  } else if (!fdToken) {
+    console.log("Futebol: FOOTBALL_DATA_TOKEN nao definido, pulando.");
+  } else {
+    console.log("Futebol: buscando proximos jogos...");
+    const matches = await fetchFootballUpcoming(fdToken);
+    const mine = matches.filter(
+      (m) => footFavs.has(Number(m.homeTeam?.id)) || footFavs.has(Number(m.awayTeam?.id))
+    );
+    console.log(`Futebol: ${matches.length} no total, ${mine.length} dos seus times`);
+    for (const m of mine) events.push(footballMatchToEvent(m));
   }
 
   // Ordena por data de inicio (mais proximo primeiro).

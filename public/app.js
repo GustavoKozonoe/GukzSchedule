@@ -20,15 +20,15 @@ const REPO = detectRepo();
 
 const TOKEN_KEY = "gukz_pat";
 const EXP_KEY = "gukz_pat_exp"; // validade do token (ISO), pra avisar quando for expirar
-const GAME_LABELS = { csgo: "CS2", valorant: "Valorant", lol: "LoL" };
-const GAME_ORDER = ["csgo", "valorant", "lol"];
+const GAME_LABELS = { csgo: "CS2", valorant: "Valorant", lol: "LoL", football: "Futebol" };
+const GAME_ORDER = ["football", "csgo", "valorant", "lol"];
 
 // Estado
 let agendaEvents = [];
 let teamsCatalog = {}; // { csgo: [...], valorant: [...], lol: [...] }
-let favorites = { csgo: new Set(), valorant: new Set(), lol: new Set() };
+let favorites = { football: new Set(), csgo: new Set(), valorant: new Set(), lol: new Set() };
 let agendaGameFilter = "all";
-let teamsGameFilter = "csgo";
+let teamsGameFilter = "football";
 
 // Helper de fetch com cache-bust (Pages/CDN podem cachear)
 async function loadJSON(path) {
@@ -203,11 +203,9 @@ function updateTeamsMeta() {
 }
 
 function favoritesToObject() {
-  return {
-    csgo: [...favorites.csgo],
-    valorant: [...favorites.valorant],
-    lol: [...favorites.lol],
-  };
+  const obj = {};
+  for (const g of GAME_ORDER) obj[g] = [...(favorites[g] || [])];
+  return obj;
 }
 
 // ===========================================================================

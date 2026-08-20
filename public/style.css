@@ -11,6 +11,7 @@
   --csgo: #f0a132;
   --valorant: #ff4655;
   --lol: #1e9de3;
+  --football: #22c55e;
   --radius: 14px;
 }
 
@@ -95,6 +96,7 @@ body {
 .chip.active[data-game="csgo"] { background: var(--csgo); color: #1a1204; }
 .chip.active[data-game="valorant"] { background: var(--valorant); }
 .chip.active[data-game="lol"] { background: var(--lol); }
+.chip.active[data-game="football"] { background: var(--football); color: #05230f; }
 
 .meta { color: var(--text-dim); font-size: 12px; margin: 4px 2px 12px; }
 
@@ -127,6 +129,7 @@ body {
 .badge.csgo { background: var(--csgo); color: #1a1204; }
 .badge.valorant { background: var(--valorant); color: #fff; }
 .badge.lol { background: var(--lol); color: #fff; }
+.badge.football { background: var(--football); color: #05230f; }
 .stream { font-size: 12px; color: var(--accent-2); text-decoration: none; font-weight: 600; }
 
 /* Times (favoritos) */
