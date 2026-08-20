@@ -19,7 +19,10 @@
           <p class="tagline">Próximos jogos dos seus times</p>
         </div>
       </div>
-      <button id="calBtn" class="cal-btn" title="Assinar no Calendário do iPhone">＋ Calendário</button>
+      <div class="top-actions">
+        <button id="refreshBtn" class="icon-btn" title="Atualizar jogos agora">🔄</button>
+        <button id="calBtn" class="cal-btn" title="Assinar no Calendário do iPhone">＋ Calendário</button>
+      </div>
     </header>
 
     <nav class="tabs">
@@ -34,6 +37,7 @@
         <div id="agendaFilters" class="chips"></div>
       </div>
       <p id="agendaMeta" class="meta"></p>
+      <p id="refreshMsg" class="save-msg"></p>
       <div id="agendaList" class="list"></div>
     </main>
 
@@ -52,6 +56,7 @@
         <button id="tokenBtn" class="ghost">Configurar token</button>
       </div>
       <p id="saveMsg" class="save-msg"></p>
+      <p id="tokenExpiry" class="token-status"></p>
     </main>
 
     <!-- Modal do calendário -->
@@ -79,6 +84,9 @@
           navegador (localStorage).
         </p>
         <input id="tokenInput" class="search" type="password" placeholder="github_pat_…" />
+        <label class="field-label" for="tokenExp">Data de expiração (você escolheu 90 dias)</label>
+        <input id="tokenExp" class="search" type="date" />
+        <p id="tokenStatus" class="token-status"></p>
         <div class="modal-actions">
           <button id="saveTokenBtn" class="primary">Guardar</button>
           <button id="clearTokenBtn" class="ghost">Apagar token</button>

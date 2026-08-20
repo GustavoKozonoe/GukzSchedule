@@ -86,8 +86,8 @@ export function buildCalendar(events) {
     "METHOD:PUBLISH",
     "X-WR-CALNAME:GukzSchedule — Esports",
     "X-WR-TIMEZONE:UTC",
-    "X-PUBLISHED-TTL:PT4H",
-    "REFRESH-INTERVAL;VALUE=DURATION:PT4H",
+    "X-PUBLISHED-TTL:PT12H",
+    "REFRESH-INTERVAL;VALUE=DURATION:PT12H",
   ];
 
   const body = valid.map((ev) => buildEvent(ev, dtstamp));

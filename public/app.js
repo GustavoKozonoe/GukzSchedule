@@ -19,6 +19,7 @@ function detectRepo() {
 const REPO = detectRepo();
 
 const TOKEN_KEY = "gukz_pat";
+const EXP_KEY = "gukz_pat_exp"; // validade do token (ISO), pra avisar quando for expirar
 const GAME_LABELS = { csgo: "CS2", valorant: "Valorant", lol: "LoL" };
 const GAME_ORDER = ["csgo", "valorant", "lol"];
 
@@ -222,9 +223,43 @@ function setSaveMsg(text, kind) {
   m.className = "save-msg" + (kind ? " " + kind : "");
 }
 
-async function saveFavorites() {
+// Grava/atualiza um arquivo no repo via GitHub Contents API. Reutilizado pelo
+// "Salvar favoritos" e pelo botao "Atualizar".
+async function putFile(path, content, message) {
   const token = localStorage.getItem(TOKEN_KEY);
-  if (!token) {
+  if (!token) throw new Error("sem token");
+  const api = `https://api.github.com/repos/${REPO.owner}/${REPO.repo}/contents/${path}`;
+
+  // Pega o SHA atual (necessario pra atualizar um arquivo existente)
+  let sha;
+  const getRes = await fetch(`${api}?ref=${REPO.branch}&t=${Date.now()}`, {
+    headers: { Authorization: `Bearer ${token}`, Accept: "application/vnd.github+json" },
+  });
+  if (getRes.ok) sha = (await getRes.json()).sha;
+  else if (getRes.status !== 404) throw new Error(`GET ${getRes.status}`);
+
+  const putRes = await fetch(api, {
+    method: "PUT",
+    headers: { Authorization: `Bearer ${token}`, Accept: "application/vnd.github+json" },
+    body: JSON.stringify({
+      message,
+      content: b64utf8(content),
+      branch: REPO.branch,
+      ...(sha ? { sha } : {}),
+    }),
+  });
+  if (!putRes.ok) {
+    const body = await putRes.text().catch(() => "");
+    throw new Error(`PUT ${putRes.status} ${body.slice(0, 120)}`);
+  }
+  // Bonus: se o GitHub expuser a validade do token no header, usa ela.
+  const exp = putRes.headers.get("github-authentication-token-expiration");
+  if (exp) { storeTokenExp(exp); refreshTokenStatus(); }
+  return putRes;
+}
+
+async function saveFavorites() {
+  if (!localStorage.getItem(TOKEN_KEY)) {
     openTokenModal();
     setSaveMsg("Configure um token do GitHub para salvar (ou use “Baixar favorites.json”).", "err");
     return;
@@ -233,39 +268,91 @@ async function saveFavorites() {
     setSaveMsg("Edite o owner/repo em app.js (FALLBACK) ou abra pela URL do GitHub Pages.", "err");
     return;
   }
-
-  const path = "data/favorites.json";
-  const api = `https://api.github.com/repos/${REPO.owner}/${REPO.repo}/contents/${path}`;
   const content = JSON.stringify(favoritesToObject(), null, 2) + "\n";
   setSaveMsg("Salvando…");
-
   try {
-    // Pega o SHA atual do arquivo (necessario pra atualizar)
-    let sha;
-    const getRes = await fetch(`${api}?ref=${REPO.branch}`, {
-      headers: { Authorization: `Bearer ${token}`, Accept: "application/vnd.github+json" },
-    });
-    if (getRes.ok) sha = (await getRes.json()).sha;
-    else if (getRes.status !== 404) throw new Error(`GET ${getRes.status}`);
-
-    const putRes = await fetch(api, {
-      method: "PUT",
-      headers: { Authorization: `Bearer ${token}`, Accept: "application/vnd.github+json" },
-      body: JSON.stringify({
-        message: "Atualiza favoritos (via GukzSchedule)",
-        content: b64utf8(content),
-        branch: REPO.branch,
-        ...(sha ? { sha } : {}),
-      }),
-    });
-    if (!putRes.ok) {
-      const body = await putRes.text().catch(() => "");
-      throw new Error(`PUT ${putRes.status} ${body.slice(0, 120)}`);
-    }
+    await putFile("data/favorites.json", content, "Atualiza favoritos (via GukzSchedule)");
     setSaveMsg("Salvo! O robô do GitHub vai atualizar a agenda em alguns minutos.", "ok");
   } catch (err) {
     setSaveMsg("Falha ao salvar: " + err.message, "err");
   }
+}
+
+// ---- Validade do token ------------------------------------------------------
+function storeTokenExp(value) {
+  let d = new Date(value);
+  if (isNaN(d)) d = new Date(String(value).replace(" ", "T")); // formato do header do GitHub
+  if (!isNaN(d)) localStorage.setItem(EXP_KEY, d.toISOString());
+}
+
+function tokenExpText() {
+  if (!localStorage.getItem(TOKEN_KEY)) return { text: "Nenhum token configurado.", kind: "" };
+  const raw = localStorage.getItem(EXP_KEY);
+  if (!raw) return { text: "Token configurado (validade não informada).", kind: "ok" };
+  const d = new Date(raw);
+  const dateStr = d.toLocaleDateString("pt-BR");
+  const days = Math.ceil((d - new Date()) / 86400000);
+  if (days < 0) return { text: `⚠️ Token expirou em ${dateStr}. Gere um novo.`, kind: "err" };
+  if (days === 0) return { text: `⚠️ Token expira hoje (${dateStr}).`, kind: "warn" };
+  if (days <= 7) return { text: `⚠️ Token expira em ${dateStr} — faltam ${days} dia(s).`, kind: "warn" };
+  return { text: `Token expira em ${dateStr} — faltam ${days} dias.`, kind: "ok" };
+}
+
+function refreshTokenStatus() {
+  const { text, kind } = tokenExpText();
+  const hasToken = !!localStorage.getItem(TOKEN_KEY);
+  const inModal = $("#tokenStatus");
+  if (inModal) { inModal.textContent = text; inModal.className = "token-status " + kind; }
+  const inTab = $("#tokenExpiry");
+  if (inTab) { inTab.textContent = hasToken ? text : ""; inTab.className = "token-status " + kind; }
+}
+
+// ---- Botao "Atualizar" ------------------------------------------------------
+function setRefreshMsg(text, kind) {
+  const m = $("#refreshMsg");
+  m.textContent = text;
+  m.className = "save-msg" + (kind ? " " + kind : "");
+}
+
+async function triggerRefresh() {
+  const btn = $("#refreshBtn");
+  btn.classList.add("spinning");
+  setRefreshMsg("Atualizando…");
+
+  // 1. Recarrega a lista ja publicada (rapido, sem token)
+  try {
+    const agenda = await loadJSON("agenda.json");
+    agendaEvents = agenda.events || [];
+    updateAgendaMeta(agenda.generatedAt);
+    renderAgenda();
+  } catch { /* placeholder ainda nao gerado */ }
+
+  // 2. Se tiver token, forca o robo a rodar gravando data/.refresh
+  const canPush = localStorage.getItem(TOKEN_KEY) && REPO.owner !== FALLBACK.owner;
+  if (!canPush) {
+    btn.classList.remove("spinning");
+    setRefreshMsg(
+      localStorage.getItem(TOKEN_KEY)
+        ? "Lista recarregada."
+        : "Lista recarregada. Configure o token (aba Meus times) para forçar uma busca nova de jogos.",
+      "ok"
+    );
+    return;
+  }
+  try {
+    await putFile("data/.refresh", new Date().toISOString() + "\n", "Forcar atualizacao (via GukzSchedule)");
+    setRefreshMsg("Busca disparada! Os jogos novos aparecem em ~1–2 min — toque em 🔄 de novo para ver.", "ok");
+  } catch (err) {
+    setRefreshMsg("Recarregado, mas falhou ao disparar o robô: " + err.message, "err");
+  } finally {
+    btn.classList.remove("spinning");
+  }
+}
+
+function updateAgendaMeta(generatedAt) {
+  $("#agendaMeta").textContent = generatedAt
+    ? `${agendaEvents.length} jogo(s) • atualizado ${new Date(generatedAt).toLocaleString("pt-BR")}`
+    : `${agendaEvents.length} jogo(s)`;
 }
 
 function downloadFavorites() {
@@ -296,6 +383,11 @@ function openCalModal() {
 }
 function openTokenModal() {
   $("#tokenInput").value = localStorage.getItem(TOKEN_KEY) || "";
+  // Pre-preenche a validade: a guardada, ou hoje + 90 dias como sugestao.
+  const raw = localStorage.getItem(EXP_KEY);
+  const d = raw ? new Date(raw) : new Date(Date.now() + 90 * 86400000);
+  $("#tokenExp").value = isNaN(d) ? "" : d.toISOString().slice(0, 10);
+  refreshTokenStatus();
   $("#tokenModal").hidden = false;
 }
 
@@ -324,6 +416,7 @@ async function init() {
   $("#agendaSearch").addEventListener("input", renderAgenda);
   $("#teamSearch").addEventListener("input", renderTeams);
   $("#calBtn").addEventListener("click", openCalModal);
+  $("#refreshBtn").addEventListener("click", triggerRefresh);
   $("#saveBtn").addEventListener("click", saveFavorites);
   $("#downloadBtn").addEventListener("click", downloadFavorites);
   $("#tokenBtn").addEventListener("click", openTokenModal);
@@ -337,12 +430,17 @@ async function init() {
   $("#saveTokenBtn").addEventListener("click", () => {
     const v = $("#tokenInput").value.trim();
     if (v) localStorage.setItem(TOKEN_KEY, v);
+    const exp = $("#tokenExp").value;
+    if (exp) storeTokenExp(exp);
+    refreshTokenStatus();
     $("#tokenModal").hidden = true;
     setSaveMsg("Token guardado neste navegador.", "ok");
   });
   $("#clearTokenBtn").addEventListener("click", () => {
     localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(EXP_KEY);
     $("#tokenInput").value = "";
+    refreshTokenStatus();
     setSaveMsg("Token apagado.", "ok");
   });
 
@@ -353,10 +451,7 @@ async function init() {
   try {
     const agenda = await loadJSON("agenda.json");
     agendaEvents = agenda.events || [];
-    if (agenda.generatedAt) {
-      $("#agendaMeta").textContent =
-        `${agendaEvents.length} jogo(s) • atualizado ${new Date(agenda.generatedAt).toLocaleString("pt-BR")}`;
-    }
+    updateAgendaMeta(agenda.generatedAt);
   } catch { /* placeholder ainda nao gerado */ }
 
   try {
@@ -372,6 +467,7 @@ async function init() {
   renderAgenda();
   renderTeams();
   updateTeamsMeta();
+  refreshTokenStatus();
 }
 
 init();
