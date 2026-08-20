@@ -46,7 +46,8 @@ function descriptionFor(ev) {
   const parts = [];
   if (ev.league) parts.push(ev.league);
   if (ev.serie) parts.push(ev.serie);
-  if (ev.tournament && ev.tournament !== ev.serie) parts.push(ev.tournament);
+  if (ev.tournament && ev.tournament !== ev.serie && ev.tournament !== ev.league)
+    parts.push(ev.tournament);
   if (ev.numberOfGames) parts.push(`Bo${ev.numberOfGames}`);
   if (ev.streamUrl) parts.push(`Stream: ${ev.streamUrl}`);
   return parts.join(" — ");
