@@ -51,6 +51,15 @@ body {
   white-space: nowrap;
 }
 .cal-btn:active { transform: scale(0.97); }
+.top-actions { display: flex; align-items: center; gap: 8px; }
+.icon-btn {
+  background: var(--bg-elev); border: 1px solid var(--border); color: var(--text);
+  border-radius: 999px; width: 40px; height: 40px; font-size: 17px; cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.icon-btn:active { transform: scale(0.95); }
+.icon-btn.spinning { animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
 
 /* Tabs */
 .tabs {
@@ -176,4 +185,10 @@ button.ghost, a.ghost {
 .modal-card .how { font-size: 12px; background: var(--bg-elev-2); padding: 10px; border-radius: 10px; }
 .modal-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
 .hint { font-size: 12px; margin-top: 14px; }
+.field-label { display: block; font-size: 12px; color: var(--text-dim); margin: 12px 2px 6px; }
+.token-status { font-size: 13px; margin: 8px 2px 0; min-height: 18px; }
+.token-status.ok { color: var(--accent-2); }
+.token-status.warn { color: var(--csgo); }
+.token-status.err { color: var(--danger); }
+input[type="date"] { color-scheme: dark; }
 code { background: var(--bg-elev-2); padding: 1px 5px; border-radius: 5px; font-size: 12px; }

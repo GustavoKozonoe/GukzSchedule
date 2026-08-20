@@ -14,7 +14,7 @@ tudo de tempos em tempos e publica no GitHub Pages.
 ## Como funciona
 
 ```
-GitHub Actions (a cada 4h)  →  busca jogos na PandaScore  →  gera:
+GitHub Actions (a cada 12h)  →  busca jogos na PandaScore  →  gera:
     • public/agenda.ics   (pro Calendário do iPhone)
     • public/agenda.json  (pra página web)
     • public/teams.json   (catálogo de times pro seletor)
@@ -26,6 +26,12 @@ GitHub Actions (a cada 4h)  →  busca jogos na PandaScore  →  gera:
 
 Você escolhe seus times na aba **Meus times** da página. Isso salva `data/favorites.json` no
 repositório, o que dispara o robô e regenera a agenda.
+
+O robô roda sozinho **de 12 em 12 horas**. Se quiser atualizar na hora, use o botão **🔄** no topo da
+página (ele força o robô a rodar na hora — precisa do token configurado).
+
+A validade do token configurado aparece na aba **Meus times** e no diálogo **Configurar token**, com
+aviso quando estiver perto de expirar.
 
 ---
 
