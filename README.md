@@ -1,14 +1,16 @@
 # GukzSchedule 🎮
 
-Uma agenda dos jogos dos **seus times** — esports (CS2, Valorant, LoL) e **futebol** — em um lugar só:
+Uma agenda dos jogos dos **seus times/jogadores** — esports (CS2, Valorant, LoL), **futebol** e
+**tênis** — em um lugar só:
 
 - **Página web** simples pra ver os próximos jogos (com busca e filtro por jogo).
 - **Calendário assinável** (`.ics`) pra assinar no **Calendário do iPhone** — os jogos aparecem no app
   nativo, com alerta, e atualizam sozinhos. **Sem App Store, sem servidor, sem custo.**
 
-Os dados de esports vêm da [PandaScore](https://pandascore.co) e os de futebol da
-[football-data.org](https://www.football-data.org) (ambos com tier grátis). Um robô do GitHub Actions
-atualiza tudo de tempos em tempos e publica no GitHub Pages.
+Os dados de esports vêm da [PandaScore](https://pandascore.co), os de futebol da
+[football-data.org](https://www.football-data.org) e os de tênis (ATP/WTA) da
+[The Odds API](https://the-odds-api.com) — todos com tier grátis. Um robô do GitHub Actions atualiza
+tudo de tempos em tempos e publica no GitHub Pages.
 
 ---
 
@@ -53,6 +55,16 @@ aviso quando estiver perto de expirar.
 > Championship e Libertadores. As que não estiverem no seu plano são puladas automaticamente.
 > A lista fica em `COMPETITIONS`, no topo de `src/footballdata.mjs`.
 
+**The Odds API (tênis) — opcional:**
+1. Pegue uma API key grátis em https://the-odds-api.com (tier grátis ~500 req/mês; mas os endpoints
+   que usamos, `/sports` e `/events`, **não consomem cota**).
+2. Guarde a key. Sem ela, o app **não mostra tênis** (o resto continua funcionando).
+
+> O tênis (ATP/WTA) só lista jogadores/partidas que já estão marcados a curto prazo (a fonte é
+> baseada em casas de apostas). Você favorita os jogadores que aparecem no seletor. Para somar outros
+> esportes dessa mesma API no futuro (basquete, MMA, boxe…), basta adicionar o grupo em `ODDS_GAMES`,
+> no topo de `src/oddsapi.mjs`.
+
 ### 2. Suba este projeto pro GitHub
 Crie um repositório chamado `GukzSchedule` na sua conta e suba estes arquivos:
 
@@ -69,6 +81,7 @@ git push -u origin main
 No repositório: **Settings → Secrets and variables → Actions → New repository secret**
 - `PANDASCORE_TOKEN` = o token da PandaScore
 - `FOOTBALL_DATA_TOKEN` = o token da football-data.org (opcional; só se quiser futebol)
+- `ODDS_API_KEY` = a key da The Odds API (opcional; só se quiser tênis)
 
 ### 4. Ligue o GitHub Pages
 **Settings → Pages → Build and deployment → Source: GitHub Actions.**
@@ -130,6 +143,7 @@ node scripts/serve.mjs
 |---|---|
 | `src/pandascore.mjs` | Cliente da API da PandaScore (esports) |
 | `src/footballdata.mjs` | Coletor de futebol (football-data.org) |
+| `src/oddsapi.mjs` | Coletor multi-esportes (The Odds API) — tênis |
 | `src/ics.mjs` | Monta o arquivo `.ics` |
 | `scripts/catalog.mjs` | Gera `public/teams.json` (catálogo de times) |
 | `scripts/generate.mjs` | Gera `public/agenda.ics`, `agenda.json` e `favorites.json` |
@@ -141,7 +155,8 @@ node scripts/serve.mjs
 
 ## Próximos passos possíveis
 
-A arquitetura é modular. **Futebol** já entrou como o coletor `src/footballdata.mjs`. Pra adicionar
-**tênis ou tênis de mesa**, é só criar um novo coletor que produza eventos no mesmo formato
-(`matchToEvent` / `footballMatchToEvent`) e juntá-los no `generate.mjs` (e no `catalog.mjs` para o
-seletor). Cada esporte pode usar uma API diferente (API-Sports, Sportradar, etc.).
+A arquitetura é modular. **Futebol** (`src/footballdata.mjs`) e **tênis** (`src/oddsapi.mjs`) já
+entraram. Como a The Odds API é multi-esportes, dá pra somar **basquete, MMA, boxe, etc.** só
+adicionando o grupo em `ODDS_GAMES` (topo de `src/oddsapi.mjs`) — reaproveitando todo o coletor.
+Esportes de outras fontes (ex.: **tênis de mesa**, que não tem API grátis boa) entram como um novo
+coletor produzindo eventos no mesmo formato e juntando no `generate.mjs`/`catalog.mjs`.

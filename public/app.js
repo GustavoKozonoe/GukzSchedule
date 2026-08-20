@@ -20,13 +20,13 @@ const REPO = detectRepo();
 
 const TOKEN_KEY = "gukz_pat";
 const EXP_KEY = "gukz_pat_exp"; // validade do token (ISO), pra avisar quando for expirar
-const GAME_LABELS = { csgo: "CS2", valorant: "Valorant", lol: "LoL", football: "Futebol" };
-const GAME_ORDER = ["football", "csgo", "valorant", "lol"];
+const GAME_LABELS = { csgo: "CS2", valorant: "Valorant", lol: "LoL", football: "Futebol", tennis: "Tênis" };
+const GAME_ORDER = ["football", "tennis", "csgo", "valorant", "lol"];
 
 // Estado
 let agendaEvents = [];
 let teamsCatalog = {}; // { csgo: [...], valorant: [...], lol: [...] }
-let favorites = { football: new Set(), csgo: new Set(), valorant: new Set(), lol: new Set() };
+let favorites = { football: new Set(), tennis: new Set(), csgo: new Set(), valorant: new Set(), lol: new Set() };
 let agendaGameFilter = "all";
 let teamsGameFilter = "football";
 
@@ -454,7 +454,8 @@ async function init() {
 
   try {
     const fav = await loadJSON("favorites.json");
-    for (const g of GAME_ORDER) favorites[g] = new Set((fav[g] || []).map(Number));
+    // Nao forcamos Number: esports/futebol usam ids numericos e o tenis usa nomes (texto).
+    for (const g of GAME_ORDER) favorites[g] = new Set(fav[g] || []);
   } catch { /* sem favoritos ainda */ }
 
   try {
