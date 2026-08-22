@@ -40,12 +40,14 @@ jobs:
         env:
           PANDASCORE_TOKEN: ${{ secrets.PANDASCORE_TOKEN }}
           FOOTBALL_DATA_TOKEN: ${{ secrets.FOOTBALL_DATA_TOKEN }}
+          ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
         run: node scripts/catalog.mjs
 
       - name: Gerar agenda (.ics + .json)
         env:
           PANDASCORE_TOKEN: ${{ secrets.PANDASCORE_TOKEN }}
           FOOTBALL_DATA_TOKEN: ${{ secrets.FOOTBALL_DATA_TOKEN }}
+          ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
         run: node scripts/generate.mjs
 
       - uses: actions/configure-pages@v5
