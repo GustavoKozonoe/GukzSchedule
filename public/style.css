@@ -102,6 +102,11 @@ body {
 
 .meta { color: var(--text-dim); font-size: 12px; margin: 4px 2px 12px; }
 
+.tennis-add { display: flex; gap: 8px; margin-bottom: 12px; }
+.tennis-add[hidden] { display: none; }
+.tennis-add .search { flex: 1; }
+.tennis-add button { white-space: nowrap; }
+
 /* Lista de jogos */
 .list { display: flex; flex-direction: column; gap: 10px; }
 .day-header {

@@ -10,10 +10,15 @@
 const BASE = "https://api.football-data.org/v4";
 
 // Competicoes acompanhadas. As que nao estiverem no seu plano sao puladas sem erro.
-// BSA=Brasileirao, PL=Premier League, PD=La Liga, SA=Serie A (ITA), BL1=Bundesliga,
-// FL1=Ligue 1, DED=Eredivisie, PPL=Primeira Liga (POR), CL=Champions, ELC=Championship,
-// CLI=Libertadores (pode nao estar no tier gratis).
-export const COMPETITIONS = ["BSA", "CL", "CLI", "PL", "PD", "SA", "BL1", "FL1", "DED", "PPL", "ELC"];
+// Ligas: BSA=Brasileirao, PL=Premier League, PD=La Liga, SA=Serie A (ITA),
+// BL1=Bundesliga, FL1=Ligue 1, DED=Eredivisie, PPL=Primeira Liga (POR), ELC=Championship.
+// Copas/torneios: CL=Champions, CLI=Libertadores, WC=Copa do Mundo, EC=Eurocopa.
+// Obs.: copas domesticas (Copa do Brasil, FA Cup, etc.) NAO existem no tier gratis
+// da football-data.org — por isso nao aparecem.
+export const COMPETITIONS = [
+  "BSA", "PL", "PD", "SA", "BL1", "FL1", "DED", "PPL", "ELC", // ligas
+  "CL", "CLI", "WC", "EC", // copas/torneios
+];
 
 export const FOOTBALL_GAME = { slug: "football", label: "Futebol" };
 
