@@ -45,6 +45,18 @@ const el = (tag, cls, txt) => {
   return e;
 };
 
+// Normaliza texto pra busca: minusculo e sem acento (ex.: "São" -> "sao").
+const norm = (s) => (s || "").toString().toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").trim();
+
+// Atrasa a execucao ate parar de digitar (deixa a busca leve em listas grandes).
+function debounce(fn, ms) {
+  let t;
+  return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), ms); };
+}
+
+// Listas maiores que isso so renderizam apos o usuario digitar (evita travar).
+const BIG_LIST = 400;
+
 // ===========================================================================
 // Tabs
 // ===========================================================================
@@ -155,28 +167,59 @@ function matchCard(ev, start) {
 // ===========================================================================
 // ABA: MEUS TIMES
 // ===========================================================================
+// Monta a lista exibida para o jogo atual. No tenis, junta os nomes que voce
+// adicionou manualmente e que nao estao no catalogo (pra aparecerem marcados).
+function displayTeamsFor(game) {
+  const teams = (teamsCatalog[game] || []).slice();
+  if (game === "tennis") {
+    const known = new Set(teams.map((t) => t.id));
+    for (const name of favorites.tennis || []) {
+      if (!known.has(name)) teams.push({ id: name, name, acronym: "add", image_url: null });
+    }
+  }
+  return teams;
+}
+
 function renderTeams() {
   const list = $("#teamsList");
   list.innerHTML = "";
-  const q = $("#teamSearch").value.trim().toLowerCase();
-  const teams = teamsCatalog[teamsGameFilter] || [];
-
-  const filtered = teams.filter((t) => !q || (t.name || "").toLowerCase().includes(q));
+  const q = norm($("#teamSearch").value);
+  const teams = displayTeamsFor(teamsGameFilter);
   const picked = favorites[teamsGameFilter];
 
-  // Favoritos primeiro, depois alfabetico
-  filtered.sort((a, b) => {
+  // Mostra/oculta o campo "adicionar por nome" (so faz sentido no tenis).
+  $("#tennisAdd").hidden = teamsGameFilter !== "tennis";
+
+  // Decide o conjunto base:
+  // - com busca: filtra por nome (sem acento)
+  // - sem busca em lista pequena: mostra tudo
+  // - sem busca em lista grande: mostra so os favoritos (evita renderizar milhares)
+  let base;
+  if (q) base = teams.filter((t) => norm(t.name).includes(q));
+  else if (teams.length <= BIG_LIST) base = teams;
+  else base = teams.filter((t) => picked.has(t.id));
+
+  base.sort((a, b) => {
     const pa = picked.has(a.id), pb = picked.has(b.id);
     if (pa !== pb) return pa ? -1 : 1;
     return (a.name || "").localeCompare(b.name || "");
   });
 
-  if (filtered.length === 0) {
-    list.appendChild(el("div", "empty", teams.length ? "Nenhum time encontrado." : "Catálogo ainda não gerado."));
+  if (base.length === 0) {
+    let msg;
+    if (!teams.length) msg = "Catálogo ainda não gerado.";
+    else if (!q && teams.length > BIG_LIST) msg = "Muitos times — digite para buscar.";
+    else msg = "Nada encontrado.";
+    list.appendChild(el("div", "empty", msg));
     return;
   }
 
-  for (const t of filtered.slice(0, 300)) {
+  // Dica quando a lista grande esta so com favoritos (sem busca ativa)
+  if (!q && teams.length > BIG_LIST) {
+    list.appendChild(el("div", "meta", `Mostrando seus favoritos. Digite para buscar entre ${teams.length}.`));
+  }
+
+  for (const t of base.slice(0, 150)) {
     const row = el("div", "team-row" + (picked.has(t.id) ? " checked" : ""));
     if (t.image_url) {
       const img = el("img");
@@ -195,6 +238,18 @@ function renderTeams() {
     });
     list.appendChild(row);
   }
+}
+
+// Adiciona um jogador de tenis por nome (a fonte identifica por nome).
+function addTennisByName() {
+  const input = $("#tennisNameInput");
+  const name = input.value.trim();
+  if (!name) return;
+  favorites.tennis.add(name);
+  input.value = "";
+  renderTeams();
+  updateTeamsMeta();
+  setSaveMsg(`"${name}" adicionado — não esqueça de Salvar favoritos.`, "ok");
 }
 
 function updateTeamsMeta() {
@@ -411,8 +466,10 @@ function buildChips(container, includeAll, current, onPick) {
 // ===========================================================================
 async function init() {
   // Listeners
-  $("#agendaSearch").addEventListener("input", renderAgenda);
-  $("#teamSearch").addEventListener("input", renderTeams);
+  $("#agendaSearch").addEventListener("input", debounce(renderAgenda, 150));
+  $("#teamSearch").addEventListener("input", debounce(renderTeams, 200));
+  $("#tennisAddBtn").addEventListener("click", addTennisByName);
+  $("#tennisNameInput").addEventListener("keydown", (e) => { if (e.key === "Enter") addTennisByName(); });
   $("#calBtn").addEventListener("click", openCalModal);
   $("#refreshBtn").addEventListener("click", triggerRefresh);
   $("#saveBtn").addEventListener("click", saveFavorites);

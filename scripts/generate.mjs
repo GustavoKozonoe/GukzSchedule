@@ -77,7 +77,11 @@ async function main() {
     } else {
       console.log(`${g.label}: buscando proximos jogos...`);
       const evs = await fetchEventsByGroup(oddsKey, g.group);
-      const mine = evs.filter((e) => favs.has(e.home_team) || favs.has(e.away_team));
+      // Compara por nome normalizado (sem acento/maiuscula) para casar nomes
+      // adicionados manualmente com a grafia da API.
+      const norm = (s) => (s || "").toString().toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").trim();
+      const favNorm = new Set([...favs].map(norm));
+      const mine = evs.filter((e) => favNorm.has(norm(e.home_team)) || favNorm.has(norm(e.away_team)));
       console.log(`${g.label}: ${evs.length} no total, ${mine.length} dos seus favoritos`);
       for (const e of mine) events.push(oddsEventToEvent(e, g.slug, g.label));
     }
