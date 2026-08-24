@@ -88,6 +88,7 @@ export async function fetchFootballTeams(token) {
         teams.push({
           id: t.id,
           name: t.name,
+          shortName: t.shortName || null, // usado pra casar com a API-Football (copas)
           acronym: t.tla || t.shortName || null,
           image_url: t.crest || null,
         });

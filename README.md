@@ -52,8 +52,19 @@ aviso quando estiver perto de expirar.
 
 > Competições acompanhadas (as que estiverem no tier grátis): Brasileirão, Champions League,
 > Premier League, La Liga, Serie A (ITA), Bundesliga, Ligue 1, Eredivisie, Primeira Liga (POR),
-> Championship e Libertadores. As que não estiverem no seu plano são puladas automaticamente.
-> A lista fica em `COMPETITIONS`, no topo de `src/footballdata.mjs`.
+> Championship, Libertadores, Copa do Mundo e Eurocopa. As que não estiverem no seu plano são
+> puladas automaticamente. A lista fica em `COMPETITIONS`, no topo de `src/footballdata.mjs`.
+
+**API-Football (copas de futebol) — opcional:**
+1. Crie uma conta grátis em https://dashboard.api-football.com (tier grátis permanente, **100 req/dia**).
+2. Guarde a key. Ela complementa a football-data com as **copas** que o tier grátis dela não tem:
+   Copa do Brasil, Copa Sudamericana, Copa América, FA Cup, Copa del Rey, Coppa Italia, DFB Pokal.
+3. Sem a key, as copas simplesmente não aparecem (o resto segue normal).
+
+> Como a API-Football usa IDs de time próprios, os jogos de copa são casados com seus times de futebol
+> favoritos **por nome** (normalizado, ignora acento). Funciona bem para clubes conhecidos; a lista de
+> copas fica em `CUPS`, no topo de `src/apifootball.mjs`. A Libertadores continua vindo da football-data
+> (pra não duplicar).
 
 **The Odds API (tênis) — opcional:**
 1. Pegue uma API key grátis em https://the-odds-api.com (tier grátis ~500 req/mês; mas os endpoints
@@ -81,6 +92,7 @@ git push -u origin main
 No repositório: **Settings → Secrets and variables → Actions → New repository secret**
 - `PANDASCORE_TOKEN` = o token da PandaScore
 - `FOOTBALL_DATA_TOKEN` = o token da football-data.org (opcional; só se quiser futebol)
+- `API_FOOTBALL_KEY` = a key da API-Football (opcional; só se quiser as copas de futebol)
 - `ODDS_API_KEY` = a key da The Odds API (opcional; só se quiser tênis)
 
 ### 4. Ligue o GitHub Pages
@@ -142,7 +154,8 @@ node scripts/serve.mjs
 | Arquivo | O quê |
 |---|---|
 | `src/pandascore.mjs` | Cliente da API da PandaScore (esports) |
-| `src/footballdata.mjs` | Coletor de futebol (football-data.org) |
+| `src/footballdata.mjs` | Coletor de futebol — ligas (football-data.org) |
+| `src/apifootball.mjs` | Coletor de futebol — copas (API-Football) |
 | `src/oddsapi.mjs` | Coletor multi-esportes (The Odds API) — tênis |
 | `src/ics.mjs` | Monta o arquivo `.ics` |
 | `scripts/catalog.mjs` | Gera `public/teams.json` (catálogo de times) |
