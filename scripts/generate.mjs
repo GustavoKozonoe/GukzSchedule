@@ -6,6 +6,7 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { GAMES, fetchUpcoming, matchToEvent } from "../src/pandascore.mjs";
 import { fetchFootballUpcoming, footballMatchToEvent } from "../src/footballdata.mjs";
+import { ODDS_GAMES, fetchEventsByGroup, oddsEventToEvent } from "../src/oddsapi.mjs";
 import { buildCalendar } from "../src/ics.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -63,6 +64,23 @@ async function main() {
     );
     console.log(`Futebol: ${matches.length} no total, ${mine.length} dos seus times`);
     for (const m of mine) events.push(footballMatchToEvent(m));
+  }
+
+  // The Odds API (tenis e outros) — opcional, so se o token existir
+  const oddsKey = process.env.ODDS_API_KEY;
+  for (const g of ODDS_GAMES) {
+    const favs = new Set(favorites[g.slug] || []); // ids sao nomes (strings)
+    if (favs.size === 0) {
+      console.log(`${g.label}: nenhum favorito, pulando.`);
+    } else if (!oddsKey) {
+      console.log(`${g.label}: ODDS_API_KEY nao definido, pulando.`);
+    } else {
+      console.log(`${g.label}: buscando proximos jogos...`);
+      const evs = await fetchEventsByGroup(oddsKey, g.group);
+      const mine = evs.filter((e) => favs.has(e.home_team) || favs.has(e.away_team));
+      console.log(`${g.label}: ${evs.length} no total, ${mine.length} dos seus favoritos`);
+      for (const e of mine) events.push(oddsEventToEvent(e, g.slug, g.label));
+    }
   }
 
   // Ordena por data de inicio (mais proximo primeiro).
