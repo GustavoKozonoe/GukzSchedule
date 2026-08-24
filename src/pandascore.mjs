@@ -42,17 +42,35 @@ async function getAll(path, token, { perPage = 100, maxPages = 100, query = {} }
     url.searchParams.set("per_page", String(perPage));
     for (const [k, v] of Object.entries(query)) url.searchParams.set(k, String(v));
 
-    const res = await fetch(url, { headers: { Accept: "application/json" } });
-
-    if (res.status === 429) {
-      // Rate limit estourado: espera e tenta a mesma pagina de novo.
-      await sleep(60_000);
-      page--;
-      continue;
+    // Busca a pagina com retry: 429 (rate limit), 5xx (erro passageiro do
+    // servidor) e falhas de rede sao tentados de novo algumas vezes.
+    let res = null;
+    for (let attempt = 1; attempt <= 5; attempt++) {
+      try {
+        res = await fetch(url, { headers: { Accept: "application/json" } });
+      } catch (err) {
+        console.warn(`  rede falhou em ${path} (page ${page}), tentativa ${attempt}/5: ${err.message}`);
+        res = null;
+        await sleep(1500 * attempt);
+        continue;
+      }
+      if (res.status === 429) {
+        await sleep(20_000); // rate limit: espera e tenta de novo
+        continue;
+      }
+      if (res.status >= 500) {
+        console.warn(`  PandaScore ${res.status} em ${path} (page ${page}), tentativa ${attempt}/5`);
+        await sleep(1500 * attempt);
+        continue;
+      }
+      break; // sucesso ou erro 4xx (nao adianta repetir)
     }
-    if (!res.ok) {
-      const body = await res.text().catch(() => "");
-      throw new Error(`PandaScore ${res.status} em ${path} (page ${page}): ${body.slice(0, 300)}`);
+
+    // Se nao conseguiu nem depois dos retries, segue com o que ja tem (nao derruba o build).
+    if (!res || !res.ok) {
+      const status = res ? res.status : "sem resposta";
+      console.warn(`  Desisti de ${path} na page ${page} (${status}); seguindo com ${out.length} itens.`);
+      break;
     }
 
     const batch = await res.json();

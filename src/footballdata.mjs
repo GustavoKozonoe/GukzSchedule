@@ -26,7 +26,17 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 async function fdFetch(path, token, { retries = 2 } = {}) {
   const url = BASE + path;
   for (let attempt = 0; ; attempt++) {
-    const res = await fetch(url, { headers: { "X-Auth-Token": token, Accept: "application/json" } });
+    let res;
+    try {
+      res = await fetch(url, { headers: { "X-Auth-Token": token, Accept: "application/json" } });
+    } catch (err) {
+      if (attempt < retries + 2) {
+        console.log(`  (rede falhou no futebol em ${path}, tentativa ${attempt + 1})`);
+        await sleep(1500 * (attempt + 1));
+        continue;
+      }
+      return { _skip: true, status: "rede" }; // desiste dessa competicao, nao derruba o build
+    }
 
     if (res.status === 429 && attempt < retries) {
       console.log("  (rate limit do futebol, esperando 60s…)");
@@ -37,9 +47,16 @@ async function fdFetch(path, token, { retries = 2 } = {}) {
       // Competicao fora do plano ou inexistente: sinaliza para pular.
       return { _skip: true, status: res.status };
     }
+    if (res.status >= 500 && attempt < retries + 2) {
+      console.log(`  (football-data ${res.status} em ${path}, tentativa ${attempt + 1})`);
+      await sleep(1500 * (attempt + 1));
+      continue;
+    }
     if (!res.ok) {
+      // Erro persistente: pula essa competicao em vez de derrubar o build.
       const body = await res.text().catch(() => "");
-      throw new Error(`football-data ${res.status} em ${path}: ${body.slice(0, 200)}`);
+      console.warn(`football-data ${res.status} em ${path}: ${body.slice(0, 150)} — pulando.`);
+      return { _skip: true, status: res.status };
     }
     return res.json();
   }
