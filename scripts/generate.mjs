@@ -6,14 +6,37 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { GAMES, fetchUpcoming, matchToEvent } from "../src/pandascore.mjs";
 import { fetchFootballUpcoming, footballMatchToEvent } from "../src/footballdata.mjs";
+import { fetchCupFixtures } from "../src/apifootball.mjs";
 import { ODDS_GAMES, fetchEventsByGroup, oddsEventToEvent } from "../src/oddsapi.mjs";
 import { buildCalendar } from "../src/ics.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const FAVORITES = resolve(__dirname, "../data/favorites.json");
+const TEAMS = resolve(__dirname, "../public/teams.json");
 const OUT_ICS = resolve(__dirname, "../public/agenda.ics");
 const OUT_JSON = resolve(__dirname, "../public/agenda.json");
 const OUT_FAV = resolve(__dirname, "../public/favorites.json");
+
+// Normaliza nome (sem acento/maiuscula) para casar times/jogadores entre fontes.
+const norm = (s) => (s || "").toString().toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").trim();
+
+// Nomes (normalizados) dos times de futebol favoritos, lidos do catalogo (teams.json).
+// Usado para casar as copas da API-Football (que tem IDs proprios) por nome.
+async function footballFavoriteNames(favIds) {
+  if (!favIds.size) return new Set();
+  try {
+    const cat = JSON.parse(await readFile(TEAMS, "utf8"));
+    const names = new Set();
+    for (const t of cat.teams?.football || []) {
+      if (!favIds.has(Number(t.id))) continue;
+      if (t.name) names.add(norm(t.name));
+      if (t.shortName) names.add(norm(t.shortName));
+    }
+    return names;
+  } catch {
+    return new Set();
+  }
+}
 
 async function loadFavorites() {
   try {
@@ -64,6 +87,25 @@ async function main() {
     );
     console.log(`Futebol: ${matches.length} no total, ${mine.length} dos seus times`);
     for (const m of mine) events.push(footballMatchToEvent(m));
+  }
+
+  // Copas de futebol (API-Football) — complementa a football-data (que so tem ligas).
+  // Opcional; casa os jogos das copas com seus times de futebol favoritos por nome.
+  const afKey = process.env.API_FOOTBALL_KEY;
+  if (footFavs.size === 0) {
+    // sem favoritos de futebol, nao ha o que casar
+  } else if (!afKey) {
+    console.log("Copas: API_FOOTBALL_KEY nao definido, pulando.");
+  } else {
+    const favNames = await footballFavoriteNames(footFavs);
+    if (favNames.size === 0) {
+      console.log("Copas: nao consegui os nomes dos times favoritos (teams.json), pulando.");
+    } else {
+      console.log("Copas: buscando jogos...");
+      const cupEvents = await fetchCupFixtures(afKey, favNames);
+      console.log(`Copas: ${cupEvents.length} jogos dos seus times`);
+      events.push(...cupEvents);
+    }
   }
 
   // The Odds API (tenis e outros) — opcional, so se o token existir
